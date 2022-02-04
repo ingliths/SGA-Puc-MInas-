@@ -1,0 +1,199 @@
+<template>
+  <div>
+    <base-header class="pb-6 pb-8 pt-5  bg-gradient-success">
+      <!-- Card stats -->
+
+    </base-header>
+    <b-container fluid class="mt--7">
+      <b-row>
+        <b-col>
+          <b-card no-body class="p-3">
+            <b-form @submit="onSave">
+              <b-row>
+                <b-col>
+                  <b-form-group label="Descrição:">
+                    <b-form-input
+                      v-model="form.description"
+                      required
+                    ></b-form-input>
+                  </b-form-group>
+                </b-col>
+                <b-col>
+                  <b-form-group label="Preço:">
+                    <b-form-input
+                      type="number" step="any"
+                      v-model="form.price"
+                      required
+                    ></b-form-input>
+                  </b-form-group>
+                </b-col>
+                <b-col>
+                  <b-form-group label="Quanitdade:">
+                    <b-form-input
+                      type="number"
+                      v-model="form.quantity"
+                      required
+                    ></b-form-input>
+                  </b-form-group>
+                </b-col>
+              </b-row>
+              <b-row>
+                <b-col>
+                  <b-form-group label="Categoria:">
+                    <b-form-select v-model="form.category_id" :options="categories"></b-form-select>
+                  </b-form-group>
+                </b-col>
+
+                <b-col>
+                  <b-form-group label="Fornecedor:">
+                    <b-form-select v-model="form.vendor_id" :options="vendors"></b-form-select>
+                  </b-form-group>
+                </b-col>
+
+              </b-row>
+
+
+              <b-button type="submit" variant="primary">Salvar <span v-if="form.id">Alteração</span></b-button>
+              <b-button v-if="form.id" @click="reset()" type="button" variant="danger">Cancelar</b-button>
+            </b-form>
+
+            <h3 class="mt-4 mb-2">Listagem</h3>
+
+            <b-table-simple responsive striped>
+              <b-thead>
+                <b-tr>
+                  <b-th>ID</b-th>
+                  <b-th>Nome</b-th>
+                  <b-th>Preço</b-th>
+                  <b-th>Quantidade</b-th>
+                  <b-th>Ações</b-th>
+                </b-tr>
+              </b-thead>
+              <b-tbody>
+                <b-tr v-for="item in items" :key="item.id">
+                  <b-td>{{ item.id }}</b-td>
+                  <b-td>{{ item.description }}</b-td>
+                  <b-td>{{ item.price }}</b-td>
+                  <b-td>{{ item.quantity }}</b-td>
+                  <b-td>
+                    <a @click="form = item" class="btn btn-sm btn-info">Editar</a>
+                    <a @click="destroy(item)" class="btn btn-sm btn-danger">Deletar</a>
+                  </b-td>
+                </b-tr>
+
+              </b-tbody>
+            </b-table-simple>
+          </b-card>
+        </b-col>
+      </b-row>
+      <div class="mt-5"></div>
+    </b-container>
+  </div>
+</template>
+<script>
+
+export default {
+  data() {
+    return {
+      form: null,
+      items: [],
+      path: '/products',
+      categories: [],
+      vendors: [],
+
+    };
+  },
+  mounted() {
+    this.reset()
+    this.getItems()
+    this.getCategories()
+    this.getVendors()
+  },
+  methods: {
+    onSave() {
+      let app = this;
+      let url = this.path
+      if (this.form.id) {
+        this.form['_method'] = 'patch'
+        url = this.path + '/' + this.form.id
+      }
+      this.$http.estoque.post(url, this.form)
+        .then((response) => {
+          app.getItems()
+          app.reset()
+        })
+        .catch((err) => {
+          alert('Error')
+        })
+    },
+    getItems() {
+      let app = this;
+      this.$http.estoque.get(this.path).then((response) => {
+        app.items = response.data.data;
+      })
+    },
+    getCategories() {
+      let app = this;
+      this.$http.estoque.get('/categories').then((response) => {
+        app.categories = response.data.data.map(function (el) {
+          return {
+            value: el.id,
+            text: el.name,
+          }
+        });
+      })
+    },
+    getVendors() {
+      let app = this;
+      this.$http.estoque.get('/vendors').then((response) => {
+        app.vendors = response.data.data.map(function (el) {
+          return {
+            value: el.id,
+            text: el.name,
+          }
+        });
+      })
+    },
+    reset() {
+      this.form = {
+        id: null,
+        description: '',
+        price: '',
+        quanitty: '',
+        category_id: '',
+        vendor_id: '',
+
+      }
+    },
+    destroy(item) {
+      let app = this;
+      let url = this.path + '/' + item.id
+      if (confirm("Tem certeza")) {
+        this.$http.estoque.delete(url)
+          .then((response) => {
+            app.getItems()
+          })
+          .catch((err) => {
+            alert('Error')
+          })
+      }
+    },
+  }
+};
+</script>
+<style>
+.el-table.table-dark {
+  background-color: #172b4d;
+  color: #f8f9fe;
+}
+
+.el-table.table-dark th,
+.el-table.table-dark tr {
+  background-color: #172b4d;
+}
+
+.el-table.table-dark td,
+.el-table.table-dark th.is-leaf {
+  border-bottom: none;
+}
+</style>
